@@ -24,7 +24,6 @@ const UserSchema = new mongoose.Schema({
   },
   pinCode: {
     type: Number,
-    required: [true, "Please enter pincode"],
   },
   avatar: {
     public_id: {
@@ -39,6 +38,14 @@ const UserSchema = new mongoose.Schema({
   role: {
     type: String,
     default: "user",
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now(),
+  },
+  numOfOrders: {
+    type: Number,
+    default: 0,
   },
   resetPasswordToken: String,
   resetPasswordExpire: Date,

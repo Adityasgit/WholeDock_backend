@@ -15,10 +15,7 @@ class ApiFeatures {
               },
             },
             {
-              keywords: {
-                $regex: this.queryStr.keyword,
-                $options: "i",
-              },
+              keywords: this.queryStr.keyword,
             },
             {
               _id: this.query.keyword,
