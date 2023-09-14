@@ -20,9 +20,11 @@ exports.getAllProducts = catchAsyncError(async (req, res, next) => {
   const productsCount = await Product.countDocuments();
   const apifeatures = new ApiFeatures(Product.find(), req.query)
     .search()
-    .filter()
-    .pagination(process.env.RESPERPAGE);
-  let products = undefined;
+    .filter();
+
+  let products = await apifeatures.query.clone();
+  let filteredCount = products.length;
+  apifeatures.pagination(process.env.RESPERPAGE);
   if (sort) {
     let sortfix = sort.replace(",", " ");
     const newFeature = new ApiFeatures(
@@ -30,6 +32,7 @@ exports.getAllProducts = catchAsyncError(async (req, res, next) => {
       req.query
     ).pagination(process.env.RESPERPAGE);
     products = await newFeature.query;
+    filteredCount = productsCount;
   } else {
     products = await apifeatures.query;
   }
@@ -37,7 +40,9 @@ exports.getAllProducts = catchAsyncError(async (req, res, next) => {
     return next(new ErrorHandler("Product not found", 404));
   }
 
-  res.status(200).json({ success: true, products, productsCount });
+  res
+    .status(200)
+    .json({ success: true, products, productsCount, filteredCount });
 });
 
 // Update product -- Admin

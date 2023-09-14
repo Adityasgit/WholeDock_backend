@@ -4,14 +4,30 @@ const User = require("../../models/usermodel");
 const sendToken = require("../../utils/sendJWT");
 const sendEmail = require("../../utils/sendEmail");
 const crypto = require("crypto");
-
+const cloudinary = require("cloudinary").v2;
+const fs = require("fs");
 // Register a user
 exports.registerUser = catchAsyncError(async (req, res, next) => {
+  const { name, email, password, pinCode } = req.body;
+
   let user = await User.find({ email: req.body.email });
   if (user.length >= 1) {
     return next(new ErrorHandler("try again with different credentials"), 409);
   }
-  const { name, email, password, pinCode } = req.body;
+
+  const avatarBuffer = req.files.avatar.data;
+  // Save the buffer data as a temporary file
+  const tempFilePath = `temp_${Date.now()}.png`;
+  fs.writeFileSync(tempFilePath, avatarBuffer);
+  // const uri = getDataUri(avatar);
+
+  const myCloud = await cloudinary.uploader.upload(tempFilePath, {
+    folder: "avatars",
+    width: 150,
+    crop: "scale",
+  });
+
+  fs.unlinkSync(tempFilePath);
 
   user = await User.create({
     name,
@@ -19,8 +35,8 @@ exports.registerUser = catchAsyncError(async (req, res, next) => {
     password,
     pinCode,
     avatar: {
-      public_id: "sample",
-      url: "url",
+      public_id: myCloud.public_id,
+      url: myCloud.secure_url,
     },
   });
 
@@ -75,9 +91,10 @@ exports.forgotPassword = catchAsyncError(async (req, res, next) => {
   const resetToken = user.getResetPasswordToken();
   await user.save({ validateBeforeSave: false });
 
-  const resetPasswordUrl = `${req.protocol}://${req.get(
-    "host"
-  )}/api/v1/password/reset/${resetToken}`;
+  // const resetPasswordUrl = `${req.protocol}://${req.get(
+  //   "host"
+  // )}/api/v1/password/reset/${resetToken}`;
+  const resetPasswordUrl = `${process.env.FRONTEND_URL}/password/reset/${resetToken}`;
 
   const message = `Your password reset token is :- \n\n ${resetPasswordUrl}\n\n If you have not requested this email then, please ignore it\n\nDo not share it with anyone`;
 
@@ -141,10 +158,18 @@ exports.getUserDetails = catchAsyncError(async (req, res, next) => {
 exports.updateUserPassword = catchAsyncError(async (req, res, next) => {
   const user = await User.findOne({ _id: req.user.id }).select("+password");
   const isPasswordMatched = await user.comparePassword(req.body.oldPassword);
+
   if (!isPasswordMatched) {
     return next(new ErrorHandler("old password is incorrect", 400));
   }
-
+  if (req.body.newPassword.length < 8) {
+    return next(new ErrorHandler("Password must have 8 length", 400));
+  }
+  if (req.body.newPassword === req.body.oldPassword) {
+    return next(
+      new ErrorHandler("New password should be different than old", 400)
+    );
+  }
   if (req.body.newPassword !== req.body.confirmPassword) {
     return next(new ErrorHandler("password doesnot matched", 400));
   }
@@ -153,17 +178,44 @@ exports.updateUserPassword = catchAsyncError(async (req, res, next) => {
   await user.save();
   sendToken(user, 200, res);
 });
+
 // update user profile
 exports.updateUserProfile = catchAsyncError(async (req, res, next) => {
-  const newUserData = { name: req.body.name, email: req.body.email };
-  // todo -- we will add cloudnary later
+  const avatarBuffer = req.files.avatar.data;
+  const newUserData = {
+    name: req.body.name,
+    email: req.body.email,
+  };
+  // Save the buffer data as a temporary file
+  const tempFilePath = `temp_${Date.now()}.png`;
+  fs.writeFileSync(tempFilePath, avatarBuffer);
+  if (req.files.avatar.data) {
+    const user = await User.findById(req.user.id);
+    const imgId = user.avatar.public_id;
+    await cloudinary.uploader.destroy(imgId);
+
+    const myCloud = await cloudinary.uploader.upload(tempFilePath, {
+      folder: "avatars",
+      width: 150,
+      crop: "scale",
+    });
+    newUserData.avatar = {
+      public_id: myCloud.public_id,
+      url: myCloud.secure_url,
+    };
+  }
+
+  fs.unlinkSync(tempFilePath);
+
   const user = await User.findByIdAndUpdate(req.user.id, newUserData, {
     new: true,
     runValidators: true,
     useFindandModify: false,
   });
+
   res.status(200).json({
     success: true,
+    user,
   });
 });
 
