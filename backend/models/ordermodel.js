@@ -33,9 +33,14 @@ const orderSchema = new mongoose.Schema({
         type: String,
         required: true,
       },
-      price: {
+      price: [
+        {
+          type: String,
+          required: true,
+        },
+      ],
+      landmark: {
         type: String,
-        required: true,
       },
       quantity: {
         type: String,
@@ -43,7 +48,7 @@ const orderSchema = new mongoose.Schema({
       },
       image: {
         type: String,
-        required: true,
+        // required: true,
       },
       product: {
         type: mongoose.Schema.ObjectId,
