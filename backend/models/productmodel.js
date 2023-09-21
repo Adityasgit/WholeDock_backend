@@ -23,6 +23,11 @@ const productSchema = new mongoose.Schema({
     required: [true, "Please enter product MRP"],
     maxLength: [8, "MRP cannot exceeds 8 char"],
   },
+  priority: {
+    type: Number,
+    maxLength: [2, "priority cannot exceeds 8 char"],
+    default: 99,
+  },
   ratings: {
     type: Number,
     default: 0,

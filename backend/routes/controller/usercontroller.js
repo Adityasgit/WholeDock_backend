@@ -65,6 +65,7 @@ exports.loginUser = catchAsyncError(async (req, res, next) => {
       new ErrorHandler("check your credentials before trying again", 401)
     );
   }
+
   sendToken(user, 200, res);
 });
 

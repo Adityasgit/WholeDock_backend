@@ -60,6 +60,15 @@ class ApiFeatures {
     this.query = this.query.sort(sortfix);
     return this;
   }
+  sort() {
+    const { sort } = this.queryStr;
+    if (!sort) {
+      return this;
+    }
+    const sortFix = sort.replace(",", " ");
+    this.query = this.query.sort({ name: 1 });
+    return this;
+  }
 }
 
 module.exports = ApiFeatures;
