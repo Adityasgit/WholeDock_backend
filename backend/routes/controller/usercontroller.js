@@ -8,27 +8,17 @@ const cloudinary = require("cloudinary").v2;
 const fs = require("fs");
 // Register a user
 exports.registerUser = catchAsyncError(async (req, res, next) => {
-  const { name, email, password, pinCode } = req.body;
+  const { name, email, password, pinCode, avatar } = req.body;
 
   let user = await User.find({ email: req.body.email });
   if (user.length >= 1) {
-    return next(new ErrorHandler("try again with different credentials"), 409);
+    return next(new ErrorHandler("try again with different credentials", 409));
   }
-
-  const avatarBuffer = req.files.avatar.data;
-  // Save the buffer data as a temporary file
-  const tempFilePath = `temp_${Date.now()}.png`;
-  fs.writeFileSync(tempFilePath, avatarBuffer);
-  // const uri = getDataUri(avatar);
-
-  const myCloud = await cloudinary.uploader.upload(tempFilePath, {
+  const myCloud = await cloudinary.uploader.upload(avatar, {
     folder: "avatars",
     width: 150,
     crop: "scale",
   });
-
-  fs.unlinkSync(tempFilePath);
-
   user = await User.create({
     name,
     email,
@@ -182,20 +172,18 @@ exports.updateUserPassword = catchAsyncError(async (req, res, next) => {
 
 // update user profile
 exports.updateUserProfile = catchAsyncError(async (req, res, next) => {
-  const avatarBuffer = req.files.avatar.data;
+  const avatarBuffer = req.body.avatar;
   const newUserData = {
     name: req.body.name,
     email: req.body.email,
   };
   // Save the buffer data as a temporary file
-  const tempFilePath = `temp_${Date.now()}.png`;
-  fs.writeFileSync(tempFilePath, avatarBuffer);
-  if (req.files.avatar.data) {
+  if (avatarBuffer) {
     const user = await User.findById(req.user.id);
     const imgId = user.avatar.public_id;
     await cloudinary.uploader.destroy(imgId);
 
-    const myCloud = await cloudinary.uploader.upload(tempFilePath, {
+    const myCloud = await cloudinary.uploader.upload(avatarBuffer, {
       folder: "avatars",
       width: 150,
       crop: "scale",
@@ -206,7 +194,6 @@ exports.updateUserProfile = catchAsyncError(async (req, res, next) => {
     };
   }
 
-  fs.unlinkSync(tempFilePath);
 
   const user = await User.findByIdAndUpdate(req.user.id, newUserData, {
     new: true,
@@ -268,6 +255,8 @@ exports.deleteUser = catchAsyncError(async (req, res, next) => {
       new ErrorHandler(`User doesnot exists wit id: ${req.params.id}`)
     );
   }
+  const imgId = user.avatar.public_id;
+  await cloudinary.uploader.destroy(imgId);
   await user.deleteOne();
   res.status(200).json({
     success: true,
