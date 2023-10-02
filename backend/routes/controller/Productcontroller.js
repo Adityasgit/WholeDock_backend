@@ -222,16 +222,16 @@ exports.deleteProductReviews = catchAsyncError(async (req, res, next) => {
   if (!product) {
     return next(new ErrorHandler("Product not found", 404));
   }
-  const pcopy = { ...product.reviews };
-  let toCompare = null;
-  for (let i = "0"; i < `${product.reviews.length}`; i++) {
-    if (pcopy[i].user.toString() === req.user._id.toString()) {
-      toCompare = i;
-    }
-  }
-  if (req.user._id.toString() !== pcopy[toCompare].user.toString()) {
-    return next(new ErrorHandler("you can only delete your reviews", 400));
-  }
+  // const pcopy = { ...product.reviews };
+  // let toCompare = null;
+  // for (let i = "0"; i < `${product.reviews.length}`; i++) {
+  //   if (pcopy[i].user.toString() === req.user._id.toString()) {
+  //     toCompare = i;
+  //   }
+  // }
+  // if (req.user._id.toString() !== pcopy[toCompare].user.toString()) {
+  //   return next(new ErrorHandler("you can only delete your reviews", 400));
+  // }
   const reviews = product.reviews.filter(
     (rev) => rev._id.toString() !== req.query.id.toString()
   );
@@ -240,7 +240,12 @@ exports.deleteProductReviews = catchAsyncError(async (req, res, next) => {
   reviews.forEach((rev) => {
     avg += rev.rating;
   });
-  const ratings = product.reviews.length == 1 ? 0 : avg / reviews.length;
+  let ratings = 0;
+  if (reviews.length === 0) {
+    ratings = 0;
+  } else {
+    ratings = product.reviews.length == 1 ? 0 : avg / reviews.length;
+  }
   const numofReviews = reviews.length;
   await Product.findByIdAndUpdate(
     req.query.productId,

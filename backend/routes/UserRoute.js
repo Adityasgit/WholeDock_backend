@@ -12,6 +12,7 @@ const {
   getUserDetailsforAdmin,
   updateUserRole,
   deleteUser,
+  sendOtp,
 } = require("./controller/usercontroller");
 const router = express.Router();
 const { isAuthenticatedUser, authorizeRoles } = require("../middleware/isAuth");
@@ -32,5 +33,7 @@ router
   .get(isAuthenticatedUser, authorizeRoles("admin"), getUserDetailsforAdmin)
   .put(isAuthenticatedUser, authorizeRoles("admin"), updateUserRole)
   .delete(isAuthenticatedUser, authorizeRoles("admin"), deleteUser);
+
+router.route("/send/otp").post(sendOtp);
 
 module.exports = router;

@@ -194,7 +194,6 @@ exports.updateUserProfile = catchAsyncError(async (req, res, next) => {
     };
   }
 
-
   const user = await User.findByIdAndUpdate(req.user.id, newUserData, {
     new: true,
     runValidators: true,
@@ -236,7 +235,8 @@ exports.updateUserRole = catchAsyncError(async (req, res, next) => {
     email: req.body.email,
     role: req.body.role,
   };
-  const user = await User.findByIdAndUpdate(req.user.id, newUserData, {
+
+  await User.findByIdAndUpdate(req.params.id, newUserData, {
     new: true,
     runValidators: true,
     useFindandModify: false,
@@ -248,7 +248,6 @@ exports.updateUserRole = catchAsyncError(async (req, res, next) => {
 // delete user -- Admin
 exports.deleteUser = catchAsyncError(async (req, res, next) => {
   const user = await User.findById(req.params.id);
-  // We will remove cloudnary later -- TODO
 
   if (!user) {
     return next(
@@ -260,5 +259,20 @@ exports.deleteUser = catchAsyncError(async (req, res, next) => {
   await user.deleteOne();
   res.status(200).json({
     success: true,
+  });
+});
+// send otp for password
+exports.sendOtp = catchAsyncError(async (req, res, next) => {
+  const email = req.body.email;
+  const code = Math.floor(100000 + Math.random() * 900000);
+  sendEmail({
+    email: email,
+    subject: "OTP for Registration",
+    message: `The OPT (One Time Password) for the registration in WholeDock is :-\n\n\t\t${code} \n If you not requested this OTP, Please ignore it.\n Do not share this OTP with anyone`,
+  });
+
+  res.status(200).json({
+    success: true,
+    code,
   });
 });
